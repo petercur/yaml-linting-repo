@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: linting-pipeline
+spec:
+  params:
+    - name: source-repo
+      type: string
+      description: Source code repository
+  workspaces:
+    - name: pipeline-shared-data
+  tasks:
+    - name: clone-repository
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      params:
+        - name: url
+          value: "$(params.source-repo)"
+      workspaces:
+        - name: output
+          workspace: pipeline-shared-data
+    - name: print-readme
+      runAfter:
+        - clone-repository
+      taskRef:
+        kind: Task
+        name: print-readme
+      workspaces:
+        - name: dir-with-readme
+          workspace: pipeline-shared-data
+    - name: linting-repo
+      runAfter:
+        - clone-repository
+      taskRef:
+        kind: Task
+        name: markdown-lint
+      params:
+        - name: args
+          value: ["."]
+      workspaces:
+        - name: shared-workspace
+          workspace: pipeline-shared-data
